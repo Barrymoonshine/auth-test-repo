@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import session from 'express-session';
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
+import bcrypt from 'bcryptjs';
 
 const { Schema } = mongoose;
 
@@ -59,6 +60,11 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.urlencoded({ extended: false }));
 
+app.use((req, res, next) => {
+  res.locals.currentUser = req.user;
+  next();
+});
+
 app.get('/', (req, res) => {
   res.render('index', { user: req.user });
 });
@@ -67,12 +73,17 @@ app.get('/sign-up-form', (req, res) => res.render('sign-up-form'));
 
 app.post('/sign-up-form', async (req, res, next) => {
   try {
-    const user = new User({
-      username: req.body.username,
-      password: req.body.password,
+    bcrypt.hash('somePassword', 10, async (err, hashedPassword) => {
+      if (err) {
+        console.log(err);
+      }
+      const user = new User({
+        username: req.body.username,
+        password: hashedPassword,
+      });
+      const result = await user.save();
+      res.redirect('/');
     });
-    const result = await user.save();
-    res.redirect('/');
   } catch (err) {
     return next(err);
   }
