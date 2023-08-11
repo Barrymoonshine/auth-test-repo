@@ -29,10 +29,16 @@ passport.use(
   new LocalStrategy(async (username, password, done) => {
     try {
       const user = await User.findOne({ username });
+      const match = await bcrypt.compare(password, user.password);
+      console.log(' user.password', user.password);
+      console.log('password', password);
+      console.log('match', match);
       if (!user) {
         return done(null, false, { message: 'Incorrect username' });
       }
-      if (user.password !== password) {
+      if (!match) {
+        // passwords do not match!
+        console.log('incorrect password');
         return done(null, false, { message: 'Incorrect password' });
       }
       return done(null, user);
@@ -73,7 +79,7 @@ app.get('/sign-up-form', (req, res) => res.render('sign-up-form'));
 
 app.post('/sign-up-form', async (req, res, next) => {
   try {
-    bcrypt.hash('somePassword', 10, async (err, hashedPassword) => {
+    bcrypt.hash(req.body.password, 10, async (err, hashedPassword) => {
       if (err) {
         console.log(err);
       }
